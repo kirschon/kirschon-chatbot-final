@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Kirschon Chatbot</title>
+  <style>
+    #chatbox {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 370px;
+      background: white;
+      padding: 10px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      font-family: sans-serif;
+      z-index: 9999;
+    }
+    #chatReply {
+      margin-top: 10px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    #langSelect {
+      width: 100%;
+      margin-bottom: 6px;
+      padding: 5px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Chatbot Test Page</h1>
+
+  <div id="chatbox">
+    <select id="langSelect">
+      <option value="it">🇮🇹 Italiano</option>
+      <option value="en">🇬🇧 English</option>
+      <option value="fr">🇫🇷 Français</option>
+      <option value="de">🇩🇪 Deutsch</option>
+    </select>
+    <textarea id="userInput" placeholder="Scrivi qui..." style="width:100%;padding:6px;"></textarea>
+    <button id="sendBtn" style="margin-top:5px;">Invia</button>
+    <div id="chatReply"></div>
+  </div>
+
+  <script>
+    const translations = {
+      it: { send: "Invia", placeholder: "Scrivi qui..." },
+      en: { send: "Send", placeholder: "Write here..." },
+      fr: { send: "Envoyer", placeholder: "Écrivez ici..." },
+      de: { send: "Senden", placeholder: "Schreiben Sie hier..." },
+    };
+
+    function updateLangUI(lang) {
+      const t = translations[lang] || translations["en"];
+      document.getElementById("sendBtn").textContent = t.send;
+      document.getElementById("userInput").placeholder = t.placeholder;
+    }
+
+    document.getElementById('langSelect').addEventListener('change', (e) => {
+      updateLangUI(e.target.value);
+    });
+
+    document.getElementById('sendBtn').onclick = async () => {
+      const input = document.getElementById('userInput').value;
+      const lang = document.getElementById('langSelect').value;
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: input, language: lang }),
+      });
+      const data = await res.json();
+      renderReply(data.reply);
+    };
+
+    function renderReply(text) {
+      const container = document.getElementById('chatReply');
+      container.innerHTML = '';
+      const p = document.createElement('p');
+      p.textContent = text;
+      container.appendChild(p);
+    }
+
+    updateLangUI("it"); // default on load
+  </script>
+</body>
+</html>

@@ -11,7 +11,7 @@
   document.getElementById('sendBtn').onclick = async () => {
     const input = document.getElementById('userInput').value;
     const lang = navigator.language.slice(0, 2);
-    const res = await fetch('/api/chat', {
+    const res = await fetch('https://kirschon-chatbot-final.onrender.com/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message: input, language: lang }),

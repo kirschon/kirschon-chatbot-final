@@ -1,79 +1,80 @@
-(function () {
-  const widget = document.createElement('div');
-  widget.innerHTML = `
-    <div id="chatbox-container" style="position:fixed;bottom:20px;right:20px;width:370px;z-index:9999;font-family:sans-serif;">
-      <button id="toggleChat" style="width:100%;padding:8px;border:none;background:#333;color:#fff;border-radius:10px 10px 0 0;cursor:pointer;">💬 Chat with us</button>
-      <div id="chatbox" style="display:block;background:white;padding:10px;border-radius:0 0 10px 10px;box-shadow:0 0 10px rgba(0,0,0,0.1);">
-        <textarea id="userInput" placeholder="Write here..." style="width:100%;padding:6px;"></textarea>
-        <button id="sendBtn" style="margin-top:5px;">Send</button>
-        <div id="chatReply" style="margin-top:10px; max-height:300px; overflow-y:auto;"></div>
-      </div>
+(function() {
+  // Create a wrapper div
+  const wrapper = document.createElement('div');
+  wrapper.id = 'kirschon-chat-widget';
+  wrapper.style.position = 'fixed';
+  wrapper.style.bottom   = '20px';
+  wrapper.style.right    = '20px';
+  wrapper.style.zIndex   = '9999';
+  wrapper.style.fontFamily = 'sans-serif';
+  document.body.appendChild(wrapper);
+
+  wrapper.innerHTML = `
+    <button id="kirschon-toggle" style="
+      width:100%;
+      padding:8px;
+      border:none;
+      background:#333;
+      color:#fff;
+      border-radius:10px 10px 0 0;
+      cursor:pointer;
+    ">💬 Chat with us</button>
+    <div id="kirschon-chatbox" style="
+      display:none;
+      background:white;
+      padding:10px;
+      border-radius:0 0 10px 10px;
+      box-shadow:0 0 10px rgba(0,0,0,0.1);
+    ">
+      <textarea id="kirschon-input" placeholder="Write here…" style="
+        width:100%;
+        padding:6px;
+        box-sizing:border-box;
+      "></textarea>
+      <button id="kirschon-send" style="margin-top:5px;">Send</button>
+      <div id="kirschon-replies" style="
+        margin-top:10px;
+        max-height:300px;
+        overflow-y:auto;
+      "></div>
     </div>
   `;
-  document.body.appendChild(widget);
 
-  const chatbox = document.getElementById('chatbox');
-  const toggleBtn = document.getElementById('toggleChat');
-
-  // Minimize / Expand logic
-  toggleBtn.onclick = () => {
-    if (chatbox.style.display === 'none') {
-      chatbox.style.display = 'block';
-      toggleBtn.textContent = '💬 Chat with us';
+  // Toggle logic
+  const toggle = document.getElementById('kirschon-toggle');
+  const box    = document.getElementById('kirschon-chatbox');
+  toggle.addEventListener('click', () => {
+    if (box.style.display === 'none') {
+      box.style.display = 'block';
+      toggle.textContent = '🔼 Close Chat';
     } else {
-      chatbox.style.display = 'none';
-      toggleBtn.textContent = '🔼 Open Chat';
+      box.style.display = 'none';
+      toggle.textContent = '💬 Chat with us';
     }
-  };
+  });
 
-  document.getElementById('sendBtn').onclick = async () => {
-    const inputElem = document.getElementById('userInput');
-    const container = document.getElementById('chatReply');
-    const input = inputElem.value.trim();
-    const lang = navigator.language.slice(0, 2);
+  // Send logic
+  document.getElementById('kirschon-send').onclick = async () => {
+    const inputEl = document.getElementById('kirschon-input');
+    const replyEl = document.getElementById('kirschon-replies');
+    const text = inputEl.value.trim();
+    if (!text) return;
 
-    if (!input) return;
-
-    // Show user message and typing animation
-    container.innerHTML = `<p><strong>You:</strong> ${input}</p><p><em>Typing...</em></p>`;
-    inputElem.value = '';
+    // show typing…
+    replyEl.innerHTML = `<p><em>Typing…</em></p>`;
 
     try {
       const res = await fetch('https://kirschon-chatbot-final.onrender.com/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: input, language: lang }),
+        body: JSON.stringify({ message: text })
       });
-      const data = await res.json();
-      renderReply(data.reply);
+      const { reply } = await res.json();
+      replyEl.innerHTML = `<p>${reply.replace(/\n/g,'<br>')}</p>`;
     } catch (err) {
-      container.innerHTML = `<p><strong>Error:</strong> Please try again later.</p>`;
-      console.error("Chatbot error:", err);
+      replyEl.innerHTML = `<p><strong>Error:</strong> Please try again later.</p>`;
+      console.error(err);
     }
+    inputEl.value = '';
   };
-
-  function renderReply(text) {
-    const container = document.getElementById('chatReply');
-    container.innerHTML = '';
-    const lines = text.split('\n');
-    lines.forEach(line => {
-      const match = line.match(/- (.+?): (.+?) \((https?:\/\/[^\s]+)\)(?: \[img:(https?:\/\/[^\s]+)\])?/);
-      if (match) {
-        const [_, title, desc, url, img] = match;
-        const product = document.createElement('div');
-        product.style.marginBottom = '15px';
-        product.innerHTML = `
-          ${img ? `<img src="${img}" alt="${title}" style="width:100%;max-height:150px;object-fit:cover;border-radius:8px;margin-bottom:6px;" />` : ''}
-          <strong>${title}</strong><br/>
-          <span>${desc}</span><br/>
-          <a href="${url}" target="_blank" style="color:#007bff;text-decoration:none;">View Product</a>
-        `;
-        container.appendChild(product);
-      } else {
-        const p = document.createElement('p');
-        p.textContent = line;
-        container.appendChild(p);
-      }
-    });
-  }
 })();

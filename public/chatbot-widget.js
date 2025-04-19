@@ -1,145 +1,174 @@
  // public/chatbot-widget.js
 (function() {
-  const FAVICON_URL = 'https://cdn.shopify.com/s/files/1/0023/8390/4804/files/Kirschon_favicon_symbol_e1964298-105b-4a18-9b01-5fe45c6f1e92.png?v=1683971648';
-
-  // 1️⃣ Wrapper
+  // 1) Wrapper generale
   const wrapper = document.createElement('div');
-  wrapper.id = 'kirschon-chat-widget';
+  wrapper.id = 'utopia-chat-widget';
   Object.assign(wrapper.style, {
     position: 'fixed',
     bottom:   '80px',
     right:    '80px',
-    width:    '140px',
     zIndex:   '9999',
-    fontFamily: 'sans-serif'
+    fontFamily: 'Times New Roman, serif',
+    color: '#000',
+    boxSizing: 'border-box'
   });
   document.body.appendChild(wrapper);
 
-  // 2️⃣ Markup: dark pill toggle + chat panel
+  // 2) Markup interno: bubble, bar e chat
   wrapper.innerHTML = `
-    <!-- dark pill with favicon + CHAT text -->
-    <div id="kirschon-toggle" style="
-      display: flex;
-      align-items: center;
-      background: #333;
-      padding: 8px;
-      border-radius: 50px;
-      cursor: pointer;
-      color: #fff;
-      font-size: 14px;
-      width: 100%;
-      box-sizing: border-box;
+    <!-- 2.1 Bubble iniziale -->
+    <div id="utopia-bubble" style="
+      width:50px; height:50px;
+      background:#fff;
+      border-radius:50%;
+      box-shadow:0 2px 6px rgba(0,0,0,0.2);
+      display:flex; align-items:center; justify-content:center;
+      cursor:pointer;
     ">
-      <img src="${FAVICON_URL}" alt="Logo" style="
-        width:20px;
-        height:20px;
-        margin-right:8px;
-        flex-shrink:0;
-      ">
-      <span id="kirschon-toggle-text">CHAT</span>
+      <img src="/favicon.ico" alt="Chat" style="width:24px; height:24px;">
     </div>
 
-    <!-- chat panel -->
-    <div id="kirschon-chatbox" style="
-      display: none;
-      width: 100%;
-      background: #fff;
-      padding: 10px;
-      border-radius: 10px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      box-sizing: border-box;
-      margin-top: 8px;
+    <!-- 2.2 Barra intermedia -->
+    <div id="utopia-bar" style="
+      display:none;
+      width:280px; height:50px;
+      background:#fff;
+      border-radius:25px;
+      box-shadow:0 2px 6px rgba(0,0,0,0.2);
+      display:flex; align-items:center; justify-content:space-between;
+      padding:0 15px;
+      cursor:pointer;
     ">
-      <select id="kirschon-lang-select" style="
-        width:100%;
-        margin-bottom:8px;
-        padding:4px;
-        font-size:14px;
-        box-sizing:border-box;
+      <span style="font-size:16px;">Chat with an assistant</span>
+      <img src="/favicon.ico" alt="Chat" style="width:20px; height:20px;">
+    </div>
+
+    <!-- 2.3 Chat box completa -->
+    <div id="utopia-chat" style="
+      display:none;
+      width:300px; height:400px;
+      background:#fff;
+      border-radius:5px;
+      box-shadow:0 2px 6px rgba(0,0,0,0.2);
+      display:flex; flex-direction:column; overflow:hidden;
+    ">
+      <!-- Header -->
+      <div id="utopia-chat-header" style="
+        background:#000; color:#fff;
+        padding:10px; font-weight:bold;
+        display:flex; justify-content:space-between; align-items:center;
       ">
-        <option value="it">🇮🇹 Italiano</option>
-        <option value="en">🇬🇧 English</option>
-        <option value="fr">🇫🇷 Français</option>
-        <option value="de">🇩🇪 Deutsch</option>
-        <option value="es">🇪🇸 Español</option>
-      </select>
-      <textarea id="kirschon-input" placeholder="Scrivi qui..." style="
-        width:100%;
-        padding:6px;
-        box-sizing:border-box;
-        resize: vertical;
-        min-height:60px;
-      "></textarea>
-      <button id="kirschon-send" style="
-        margin-top:8px;
-        width:100%;
-        padding:8px;
-        border:none;
-        background:#007bff;
-        color:#fff;
-        border-radius:5px;
-        cursor:pointer;
-      ">Invia</button>
-      <div id="kirschon-replies" style="
-        margin-top:10px;
-        max-height:300px;
-        overflow-y:auto;
+        <span>CHATTA CON UN ASSISTENTE</span>
+        <span id="utopia-close" style="cursor:pointer; font-size:18px;">✕</span>
+      </div>
+      <!-- Messaggi -->
+      <div id="utopia-replies" style="
+        flex:1; overflow-y:auto;
+        padding:10px; background:#f7f7f7;
+        font-family: 'Times New Roman', serif;
+        color: #000;
       "></div>
+      <!-- Input -->
+      <div id="utopia-input-area" style="
+        padding:10px; background:#f0f0f0;
+      ">
+        <textarea
+          id="utopia-input"
+          placeholder="Write here…"
+          style="
+            width:100%; height:60px;
+            border:1px solid #ccc;
+            padding:6px;
+            box-sizing:border-box;
+            font-family:'Times New Roman', serif;
+            color:#000;
+            resize:none;
+          "
+        ></textarea>
+        <button id="utopia-send" style="
+          margin-top:5px;
+          width:100%; padding:8px;
+          border:none;
+          background:#000; color:#fff;
+          border-radius:5px;
+          cursor:pointer;
+          font-family:'Times New Roman', serif;
+        ">Send</button>
+      </div>
     </div>
   `;
 
-  // 3️⃣ References
-  const toggle     = wrapper.querySelector('#kirschon-toggle');
-  const chatbox    = wrapper.querySelector('#kirschon-chatbox');
-  const langSelect = wrapper.querySelector('#kirschon-lang-select');
-  const inputEl    = wrapper.querySelector('#kirschon-input');
-  const sendBtn    = wrapper.querySelector('#kirschon-send');
-  const replyEl    = wrapper.querySelector('#kirschon-replies');
+  // 3) Riferimenti
+  const bubble   = wrapper.querySelector('#utopia-bubble');
+  const bar      = wrapper.querySelector('#utopia-bar');
+  const chat     = wrapper.querySelector('#utopia-chat');
+  const closeBtn = wrapper.querySelector('#utopia-close');
+  const replies  = wrapper.querySelector('#utopia-replies');
+  const input    = wrapper.querySelector('#utopia-input');
+  const sendBtn  = wrapper.querySelector('#utopia-send');
 
-  // 4️⃣ Translations
-  const translations = {
-    it: { send: "Invia",    placeholder: "Scrivi qui..." },
-    en: { send: "Send",     placeholder: "Write here..." },
-    fr: { send: "Envoyer",  placeholder: "Écrivez ici..." },
-    de: { send: "Senden",   placeholder: "Schreiben Sie qui..." },
-    es: { send: "Enviar",   placeholder: "Escribe aquí..." }
-  };
-
-  function updateLangUI(lang) {
-    const t = translations[lang] || translations.it;
-    sendBtn.textContent = t.send;
-    inputEl.placeholder = t.placeholder;
-  }
-
-  langSelect.addEventListener('change', e => updateLangUI(e.target.value));
-  updateLangUI(langSelect.value);
-
-  // 5️⃣ Toggle open/close
-  toggle.addEventListener('click', () => {
-    const opened = chatbox.style.display === 'block';
-    chatbox.style.display = opened ? 'none' : 'block';
+  // 4) Apertura bubble → bar
+  bubble.addEventListener('click', () => {
+    bubble.style.display = 'none';
+    bar.style.display    = 'flex';
   });
 
-  // 6️⃣ Send message
+  // 5) Apertura bar → chat + messaggio di benvenuto
+  bar.addEventListener('click', () => {
+    bar.style.display    = 'none';
+    chat.style.display   = 'flex';
+    // greeting
+    replies.innerHTML = `
+      <div style="margin-bottom:10px; font-family:'Times New Roman', serif; color:#000;">
+        <strong>Utopia:</strong> How can I help you?
+      </div>
+    `;
+  });
+
+  // 6) Chiusura chat → bubble
+  closeBtn.addEventListener('click', () => {
+    chat.style.display   = 'none';
+    bubble.style.display = 'flex';
+    replies.innerHTML    = '';           // pulisci conversazione
+  });
+
+  // 7) Invio messaggio
   sendBtn.addEventListener('click', async () => {
-    const text = inputEl.value.trim();
+    const text = input.value.trim();
     if (!text) return;
-    replyEl.innerHTML = `<p><em>Typing…</em></p>`;
-    inputEl.value = '';
+    // mostra “typing…”
+    replies.innerHTML += `
+      <div style="margin-bottom:10px; font-family:'Times New Roman', serif; color:#000;">
+        <strong>You:</strong> ${text}
+      </div>
+      <div style="margin-bottom:10px; font-family:'Times New Roman', serif; color:#666;">
+        <em>Typing…</em>
+      </div>
+    `;
+    input.value = '';
+    // scroll to bottom
+    replies.scrollTop = replies.scrollHeight;
 
     try {
       const res = await fetch('https://kirschon-chatbot-final.onrender.com/api/chat', {
-        method: 'POST',
+        method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text, language: langSelect.value })
+        body:    JSON.stringify({ message: text })
       });
       const data = await res.json();
-      replyEl.innerHTML = `<p>${data.reply.replace(/\n/g,'<br>')}</p>`;
+      // sostituisci “Typing…” con la risposta
+      replies.lastElementChild.innerHTML = `<strong>Utopia:</strong> ${data.reply}`;
+      replies.lastElementChild.style.color = '#000';
+      replies.scrollTop = replies.scrollHeight;
     } catch (err) {
-      replyEl.innerHTML = `<p><strong>Error:</strong> Try again later.</p>`;
+      replies.innerHTML += `
+        <div style="margin-bottom:10px; font-family:'Times New Roman', serif; color:#f00;">
+          <strong>Error:</strong> please try again later.
+        </div>
+      `;
       console.error(err);
     }
   });
 
-  console.log('🟢 Kirschon widget ready');
+  console.log('🟢 Utopia chat widget initialized');
 })();

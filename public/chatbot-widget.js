@@ -1,4 +1,4 @@
- // public/chatbot-widget.js
+  // public/chatbot-widget.js
 (function(){
   // 1️⃣ wrapper
   const wrapper = document.createElement('div');
@@ -15,17 +15,17 @@
   });
   document.body.appendChild(wrapper);
 
-  // 2️⃣ inject bubble + chat UI (with close icon)
+  // 2️⃣ inject bubble + chat UI
   wrapper.innerHTML = `
     <!-- Bubble -->
-    <button id="kirschon-toggle" style="
+    <button id="kc-toggle" style="
       width:60px; height:60px;
       background:#fff; border:none; border-radius:50%;
       font-size:28px; line-height:0; cursor:pointer; padding:0;
     ">💬</button>
 
     <!-- Chatbox -->
-    <div id="kirschon-chatbox" style="
+    <div id="kc-chatbox" style="
       display:none;
       width:300px; background:#fff;
       padding:10px; border-radius:5px;
@@ -34,27 +34,31 @@
       position:relative;
       margin-bottom:8px;
     ">
-      <!-- Close “×” -->
-      <span id="kirschon-close" style="
+      <!-- Close -->
+      <span id="kc-close" style="
         position:absolute; top:8px; right:8px;
         cursor:pointer; font-size:18px;
       ">✕</span>
 
-      <!-- Language selector -->
-      <select id="kirschon-lang-select" style="
-        width:100%; margin-bottom:8px;
-        padding:4px; font-size:14px;
-        font-family:inherit; box-sizing:border-box;
-      ">
-        <option value="it">🇮🇹 Italiano</option>
-        <option value="en" selected>🇬🇧 English</option>
-        <option value="fr">🇫🇷 Français</option>
-        <option value="de">🇩🇪 Deutsch</option>
-        <option value="es">🇪🇸 Español</option>
-      </select>
+      <!-- LANGUAGE SELECTOR -->
+      <div id="kc-lang-container" style="margin-bottom:8px;">
+        <select id="kc-lang-select" style="
+          width:100%; padding:6px;
+          font-size:14px; font-family:inherit;
+          box-sizing:border-box;
+        ">
+          <option value="" disabled selected>Select language</option>
+          <option value="it">🇮🇹 Italiano</option>
+          <option value="en">🇬🇧 English</option>
+          <option value="fr">🇫🇷 Français</option>
+          <option value="de">🇩🇪 Deutsch</option>
+          <option value="es">🇪🇸 Español</option>
+        </select>
+      </div>
 
-      <!-- Greeting from Utopia -->
-      <div id="kirschon-greeting" style="
+      <!-- GREETING (hidden until after language pick) -->
+      <div id="kc-greeting" style="
+        display:none;
         background:#e0e0e0;
         color:#000;
         padding:8px;
@@ -62,20 +66,18 @@
         margin-bottom:8px;
         font-size:14px;
         line-height:1.4;
-      ">
-        Hi, I’m Utopia your virtual assistant! How can I help you?
-      </div>
+      "></div>
 
-      <!-- Input -->
-      <textarea id="kirschon-input" placeholder="" style="
+      <!-- INPUT & REPLIES -->
+      <textarea id="kc-input" placeholder="Type a message…" style="
+        display:none;
         width:100%; height:80px;
         padding:6px; font-family:inherit;
         font-size:14px; box-sizing:border-box;
         resize:vertical;
       "></textarea>
-
-      <!-- Replies -->
-      <div id="kirschon-replies" style="
+      <div id="kc-replies" style="
+        display:none;
         margin-top:10px; max-height:150px;
         overflow-y:auto; font-family:inherit;
         font-size:14px; display:flex; flex-direction:column;
@@ -84,34 +86,89 @@
   `;
 
   // 3️⃣ grab elements
-  const toggleBtn   = wrapper.querySelector('#kirschon-toggle');
-  const chatbox     = wrapper.querySelector('#kirschon-chatbox');
-  const closeBtn    = wrapper.querySelector('#kirschon-close');
-  const langSelect  = wrapper.querySelector('#kirschon-lang-select');
-  const inputEl     = wrapper.querySelector('#kirschon-input');
-  const replyEl     = wrapper.querySelector('#kirschon-replies');
+  const toggleBtn = wrapper.querySelector('#kc-toggle');
+  const chatbox   = wrapper.querySelector('#kc-chatbox');
+  const closeBtn  = wrapper.querySelector('#kc-close');
+  const langCont  = wrapper.querySelector('#kc-lang-container');
+  const langSel   = wrapper.querySelector('#kc-lang-select');
+  const greetDiv  = wrapper.querySelector('#kc-greeting');
+  const inputEl   = wrapper.querySelector('#kc-input');
+  const replies   = wrapper.querySelector('#kc-replies');
 
-  // 4️⃣ update (no placeholder needed)
-  inputEl.placeholder = '';
+  // 4️⃣ localized greetings
+  const greetings = {
+    it: "Ciao! Sono Utopia, la tua assistente virtuale. Come posso aiutarti?",
+    en: "Hi, I'm Utopia your virtual assistant! How can I help you?",
+    fr: "Bonjour ! Je suis Utopia, votre assistante virtuelle. Comment puis‑je vous aider ?",
+    de: "Hallo! Ich bin Utopia, Ihre virtuelle Assistentin. Wie kann ich Ihnen helfen?",
+    es: "¡Hola! Soy Utopia, tu asistente virtual. ¿Cómo puedo ayudarte?"
+  };
 
-  // 5️⃣ show/hide chat + bubble
-  function hideChat() {
-    chatbox.style.display = 'none';
-    toggleBtn.style.display = 'block';
-    // reset replies (if you want to keep greeting, do not clear)
-    replyEl.innerHTML = '';
-  }
+  // 5️⃣ show/hide chat & bubble
   function showChat() {
     toggleBtn.style.display = 'none';
-    chatbox.style.display = 'block';
-    // show the initial greeting as a reply bubble as well
-    appendMsg('utopia', "Hi, I’m Utopia your virtual assistant! How can I help you?");
+    chatbox.style.display   = 'block';
+    // only the language selector visible initially
+    langCont.style.display  = 'block';
+    greetDiv.style.display  = 'none';
+    inputEl.style.display   = 'none';
+    replies.style.display   = 'none';
+  }
+  function hideChat() {
+    chatbox.style.display   = 'none';
+    toggleBtn.style.display = 'block';
   }
 
   toggleBtn.addEventListener('click', showChat);
   closeBtn.addEventListener('click', hideChat);
 
-  // 6️⃣ helper to append message bubbles
+  // 6️⃣ after language select → show greeting + input
+  langSel.addEventListener('change', e => {
+    const lang = e.target.value;
+    // hide selector
+    langCont.style.display   = 'none';
+    // show greeting
+    greetDiv.textContent     = greetings[lang] || greetings.en;
+    greetDiv.style.display   = 'block';
+    // show input & replies
+    inputEl.style.display    = 'block';
+    replies.style.display    = 'flex';
+    inputEl.focus();
+  });
+
+  // 7️⃣ send on Enter
+  inputEl.addEventListener('keydown', async ev => {
+    if (ev.key === 'Enter' && !ev.shiftKey) {
+      ev.preventDefault();
+      const text = inputEl.value.trim();
+      if (!text) return;
+      // append user bubble
+      appendMsg('user', text);
+      inputEl.value = '';
+      // typing…
+      appendMsg('utopia', '<em>Typing…</em>');
+      try {
+        const res = await fetch(
+          'https://kirschon-chatbot-final.onrender.com/api/chat',
+          {
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ message: text, language: langSel.value })
+          }
+        );
+        const { reply } = await res.json();
+        // replace last typing bubble
+        const last = replies.lastChild;
+        last.innerHTML = reply.replace(/\n/g,'<br>');
+      } catch {
+        const last = replies.lastChild;
+        last.innerHTML = '<strong>Error:</strong> Try again later.';
+      }
+      replies.scrollTop = replies.scrollHeight;
+    }
+  });
+
+  // 8️⃣ helper to append message
   function appendMsg(author, text) {
     const msg = document.createElement('div');
     Object.assign(msg.style, {
@@ -128,41 +185,9 @@
       border:      author==='utopia' ? 'none' : '1px solid #ccc'
     });
     msg.innerHTML = text;
-    replyEl.appendChild(msg);
-    replyEl.scrollTop = replyEl.scrollHeight;
+    replies.appendChild(msg);
+    replies.scrollTop = replies.scrollHeight;
   }
 
-  // 7️⃣ send on Enter
-  inputEl.addEventListener('keydown', async e => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      const text = inputEl.value.trim();
-      if (!text) return;
-
-      appendMsg('user', text);
-      inputEl.value = '';
-      appendMsg('utopia', '<em>Typing…</em>');
-
-      try {
-        const res = await fetch(
-          'https://kirschon-chatbot-final.onrender.com/api/chat',
-          {
-            method:  'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body:    JSON.stringify({ message: text, language: langSelect.value })
-          }
-        );
-        const { reply } = await res.json();
-        // replace the typing bubble
-        const last = replyEl.lastChild;
-        last.innerHTML = reply.replace(/\n/g,'<br>');
-      } catch {
-        const last = replyEl.lastChild;
-        last.innerHTML = '<strong>Error:</strong> Try again later.';
-      }
-      replyEl.scrollTop = replyEl.scrollHeight;
-    }
-  });
-
-  console.log('🟢 Kirschon widget updated: greeting under selector & styled bubbles');
+  console.log('🟢 Kirschon widget: selector first, then greeting');
 })();

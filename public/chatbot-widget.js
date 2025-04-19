@@ -31,7 +31,6 @@
       padding:10px; border-radius:5px;
       box-shadow:0 0 10px rgba(0,0,0,0.1);
       box-sizing:border-box;
-      margin-bottom:8px;
       position:relative;
     ">
       <!-- Close “×” -->
@@ -91,13 +90,17 @@
   });
   inputEl.placeholder = placeholders[langSelect.value] || placeholders.en;
 
-  // 5️⃣ show/hide chat
-  function hideChat() { chatbox.style.display = 'none'; }
-  function showChat() { chatbox.style.display = 'block'; }
+  // 5️⃣ show/hide chat + bubble
+  function hideChat() {
+    chatbox.style.display = 'none';
+    toggleBtn.style.display = 'block';
+  }
+  function showChat() {
+    toggleBtn.style.display = 'none';
+    chatbox.style.display = 'block';
+  }
 
-  toggleBtn.addEventListener('click', () => {
-    chatbox.style.display === 'block' ? hideChat() : showChat();
-  });
+  toggleBtn.addEventListener('click', showChat);
   closeBtn.addEventListener('click', hideChat);
 
   // 6️⃣ send on Enter
@@ -127,5 +130,5 @@
     }
   });
 
-  console.log('🟢 Kirschon widget with close button ready');
+  console.log('🟢 Kirschon widget updated (hide bubble when open)');
 })();

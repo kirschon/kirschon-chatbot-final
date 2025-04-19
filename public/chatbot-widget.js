@@ -1,14 +1,17 @@
 (function() {
-  // Create a wrapper div
+  // 1. Crei il wrapper e lo metti subito in pagina
   const wrapper = document.createElement('div');
   wrapper.id = 'kirschon-chat-widget';
-  wrapper.style.position = 'fixed';
-  wrapper.style.bottom   = '20px';
-  wrapper.style.right    = '20px';
-  wrapper.style.zIndex   = '9999';
-  wrapper.style.fontFamily = 'sans-serif';
+  Object.assign(wrapper.style, {
+    position: 'fixed',
+    bottom:   '20px',
+    right:    '20px',
+    zIndex:   '9999',
+    fontFamily: 'sans-serif'
+  });
   document.body.appendChild(wrapper);
 
+  // 2. Popoli il wrapper con bottone e chatbox (chatbox nascosta di default)
   wrapper.innerHTML = `
     <button id="kirschon-toggle" style="
       width:100%;
@@ -20,11 +23,11 @@
       cursor:pointer;
     ">💬 Chat with us</button>
     <div id="kirschon-chatbox" style="
-      display:none;
-      background:white;
-      padding:10px;
-      border-radius:0 0 10px 10px;
-      box-shadow:0 0 10px rgba(0,0,0,0.1);
+      display: none;
+      background: white;
+      padding: 10px;
+      border-radius: 0 0 10px 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
     ">
       <textarea id="kirschon-input" placeholder="Write here…" style="
         width:100%;
@@ -40,41 +43,17 @@
     </div>
   `;
 
-  // Toggle logic
-  const toggle = document.getElementById('kirschon-toggle');
-  const box    = document.getElementById('kirschon-chatbox');
-  toggle.addEventListener('click', () => {
-    if (box.style.display === 'none') {
-      box.style.display = 'block';
-      toggle.textContent = '🔼 Close Chat';
-    } else {
-      box.style.display = 'none';
-      toggle.textContent = '💬 Chat with us';
-    }
+  // 3. Prendi riferimenti *dentro* il wrapper
+  const toggleBtn = wrapper.querySelector('#kirschon-toggle');
+  const chatbox   = wrapper.querySelector('#kirschon-chatbox');
+
+  // 4. Toggle solo la chatbox, lasciando sempre visibile il bottone
+  toggleBtn.addEventListener('click', () => {
+    const isOpen = chatbox.style.display === 'block';
+    chatbox.style.display = isOpen ? 'none' : 'block';
+    toggleBtn.textContent = isOpen ? '💬 Chat with us' : '🔼 Close Chat';
   });
 
-  // Send logic
-  document.getElementById('kirschon-send').onclick = async () => {
-    const inputEl = document.getElementById('kirschon-input');
-    const replyEl = document.getElementById('kirschon-replies');
-    const text = inputEl.value.trim();
-    if (!text) return;
-
-    // show typing…
-    replyEl.innerHTML = `<p><em>Typing…</em></p>`;
-
-    try {
-      const res = await fetch('https://kirschon-chatbot-final.onrender.com/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text })
-      });
-      const { reply } = await res.json();
-      replyEl.innerHTML = `<p>${reply.replace(/\n/g,'<br>')}</p>`;
-    } catch (err) {
-      replyEl.innerHTML = `<p><strong>Error:</strong> Please try again later.</p>`;
-      console.error(err);
-    }
-    inputEl.value = '';
-  };
+  // 5. (eventuale) log per debug
+  console.log('🟢 Chat widget initialized:', { toggleBtn, chatbox });
 })();

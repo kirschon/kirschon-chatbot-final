@@ -1,4 +1,4 @@
-  // public/chatbot-widget.js
+ // public/chatbot-widget.js
 (function(){
   // 1️⃣ wrapper
   const wrapper = document.createElement('div');
@@ -56,7 +56,7 @@
         </select>
       </div>
 
-      <!-- GREETING (hidden until after language pick) -->
+      <!-- GREETING -->
       <div id="kc-greeting" style="
         display:none;
         background:#e0e0e0;
@@ -68,14 +68,27 @@
         line-height:1.4;
       "></div>
 
-      <!-- INPUT & REPLIES -->
-      <textarea id="kc-input" placeholder="Type a message…" style="
+      <!-- INPUT LABEL -->
+      <div id="kc-input-label" style="
+        display:none;
+        margin-bottom:4px;
+        font-size:14px;
+        color:#666;
+        font-family:inherit;
+      "></div>
+
+      <!-- INPUT -->
+      <textarea id="kc-input" style="
         display:none;
         width:100%; height:80px;
         padding:6px; font-family:inherit;
         font-size:14px; box-sizing:border-box;
         resize:vertical;
+        border:none;       /* ← no border */
+        outline:none;      /* ← no focus outline */
       "></textarea>
+
+      <!-- REPLIES -->
       <div id="kc-replies" style="
         display:none;
         margin-top:10px; max-height:150px;
@@ -92,10 +105,11 @@
   const langCont  = wrapper.querySelector('#kc-lang-container');
   const langSel   = wrapper.querySelector('#kc-lang-select');
   const greetDiv  = wrapper.querySelector('#kc-greeting');
+  const inputLbl  = wrapper.querySelector('#kc-input-label');
   const inputEl   = wrapper.querySelector('#kc-input');
   const replies   = wrapper.querySelector('#kc-replies');
 
-  // 4️⃣ localized greetings
+  // 4️⃣ localized greetings & input labels
   const greetings = {
     it: "Ciao! Sono Utopia, la tua assistente virtuale. Come posso aiutarti?",
     en: "Hi, I'm Utopia your virtual assistant! How can I help you?",
@@ -103,14 +117,21 @@
     de: "Hallo! Ich bin Utopia, Ihre virtuelle Assistentin. Wie kann ich Ihnen helfen?",
     es: "¡Hola! Soy Utopia, tu asistente virtual. ¿Cómo puedo ayudarte?"
   };
+  const inputPrompts = {
+    it: "Scrivi un messaggio…",
+    en: "Type a message…",
+    fr: "Tapez un message…",
+    de: "Schreiben Sie eine Nachricht…",
+    es: "Escribe un mensaje…"
+  };
 
   // 5️⃣ show/hide chat & bubble
   function showChat() {
     toggleBtn.style.display = 'none';
     chatbox.style.display   = 'block';
-    // only the language selector visible initially
     langCont.style.display  = 'block';
     greetDiv.style.display  = 'none';
+    inputLbl.style.display  = 'none';
     inputEl.style.display   = 'none';
     replies.style.display   = 'none';
   }
@@ -122,15 +143,18 @@
   toggleBtn.addEventListener('click', showChat);
   closeBtn.addEventListener('click', hideChat);
 
-  // 6️⃣ after language select → show greeting + input
+  // 6️⃣ after language select → show greeting, label & input
   langSel.addEventListener('change', e => {
     const lang = e.target.value;
     // hide selector
     langCont.style.display   = 'none';
-    // show greeting
+    // greeting
     greetDiv.textContent     = greetings[lang] || greetings.en;
     greetDiv.style.display   = 'block';
-    // show input & replies
+    // input label
+    inputLbl.textContent     = inputPrompts[lang] || inputPrompts.en;
+    inputLbl.style.display   = 'block';
+    // input & replies
     inputEl.style.display    = 'block';
     replies.style.display    = 'flex';
     inputEl.focus();
@@ -142,10 +166,8 @@
       ev.preventDefault();
       const text = inputEl.value.trim();
       if (!text) return;
-      // append user bubble
       appendMsg('user', text);
       inputEl.value = '';
-      // typing…
       appendMsg('utopia', '<em>Typing…</em>');
       try {
         const res = await fetch(
@@ -153,11 +175,10 @@
           {
             method:'POST',
             headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({ message: text, language: langSel.value })
+            body:JSON.stringify({ message:text, language:langSel.value })
           }
         );
         const { reply } = await res.json();
-        // replace last typing bubble
         const last = replies.lastChild;
         last.innerHTML = reply.replace(/\n/g,'<br>');
       } catch {
@@ -182,12 +203,12 @@
       alignSelf:   author==='utopia' ? 'flex-start' : 'flex-end',
       background:  author==='utopia' ? '#e0e0e0' : '#fff',
       color:       '#000',
-      border:      author==='utopia' ? 'none' : '1px solid #ccc'
+      border:      author==='utopia' ? 'none' : 'none'
     });
     msg.innerHTML = text;
     replies.appendChild(msg);
     replies.scrollTop = replies.scrollHeight;
   }
 
-  console.log('🟢 Kirschon widget: selector first, then greeting');
+  console.log('🟢 Kirschon widget: added input label & removed textarea border');
 })();

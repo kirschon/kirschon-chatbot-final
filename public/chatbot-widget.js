@@ -47,62 +47,101 @@
         font-family:inherit; box-sizing:border-box;
       ">
         <option value="it">🇮🇹 Italiano</option>
-        <option value="en">🇬🇧 English</option>
+        <option value="en" selected>🇬🇧 English</option>
         <option value="fr">🇫🇷 Français</option>
         <option value="de">🇩🇪 Deutsch</option>
         <option value="es">🇪🇸 Español</option>
       </select>
 
-      <!-- Input with universal greeting -->
-      <textarea id="kirschon-input"
-        placeholder="Hi, I’m Utopia your virtual assistant! How can I help you?"
-        style="
-          width:100%; height:100px;
-          padding:6px; font-family:inherit;
-          font-size:14px; box-sizing:border-box;
-          resize:vertical;
-        ">
-      </textarea>
+      <!-- Greeting from Utopia -->
+      <div id="kirschon-greeting" style="
+        background:#e0e0e0;
+        color:#000;
+        padding:8px;
+        border-radius:8px;
+        margin-bottom:8px;
+        font-size:14px;
+        line-height:1.4;
+      ">
+        Hi, I’m Utopia your virtual assistant! How can I help you?
+      </div>
+
+      <!-- Input -->
+      <textarea id="kirschon-input" placeholder="" style="
+        width:100%; height:80px;
+        padding:6px; font-family:inherit;
+        font-size:14px; box-sizing:border-box;
+        resize:vertical;
+      "></textarea>
 
       <!-- Replies -->
       <div id="kirschon-replies" style="
         margin-top:10px; max-height:150px;
         overflow-y:auto; font-family:inherit;
-        font-size:14px;
+        font-size:14px; display:flex; flex-direction:column;
       "></div>
     </div>
   `;
 
   // 3️⃣ grab elements
-  const toggleBtn  = wrapper.querySelector('#kirschon-toggle');
-  const chatbox    = wrapper.querySelector('#kirschon-chatbox');
-  const closeBtn   = wrapper.querySelector('#kirschon-close');
-  const langSelect = wrapper.querySelector('#kirschon-lang-select');
-  const inputEl    = wrapper.querySelector('#kirschon-input');
-  const replyEl    = wrapper.querySelector('#kirschon-replies');
+  const toggleBtn   = wrapper.querySelector('#kirschon-toggle');
+  const chatbox     = wrapper.querySelector('#kirschon-chatbox');
+  const closeBtn    = wrapper.querySelector('#kirschon-close');
+  const langSelect  = wrapper.querySelector('#kirschon-lang-select');
+  const inputEl     = wrapper.querySelector('#kirschon-input');
+  const replyEl     = wrapper.querySelector('#kirschon-replies');
 
-  // 4️⃣ show/hide chat + bubble
+  // 4️⃣ update (no placeholder needed)
+  inputEl.placeholder = '';
+
+  // 5️⃣ show/hide chat + bubble
   function hideChat() {
     chatbox.style.display = 'none';
     toggleBtn.style.display = 'block';
+    // reset replies (if you want to keep greeting, do not clear)
+    replyEl.innerHTML = '';
   }
   function showChat() {
     toggleBtn.style.display = 'none';
     chatbox.style.display = 'block';
+    // show the initial greeting as a reply bubble as well
+    appendMsg('utopia', "Hi, I’m Utopia your virtual assistant! How can I help you?");
   }
 
   toggleBtn.addEventListener('click', showChat);
   closeBtn.addEventListener('click', hideChat);
 
-  // 5️⃣ send on Enter
+  // 6️⃣ helper to append message bubbles
+  function appendMsg(author, text) {
+    const msg = document.createElement('div');
+    Object.assign(msg.style, {
+      maxWidth:    '80%',
+      padding:     '8px',
+      marginBottom:'8px',
+      borderRadius:'8px',
+      fontFamily:  'Times New Roman, serif',
+      fontSize:    '14px',
+      lineHeight:  '1.4',
+      alignSelf:   author==='utopia' ? 'flex-start' : 'flex-end',
+      background:  author==='utopia' ? '#e0e0e0' : '#fff',
+      color:       '#000',
+      border:      author==='utopia' ? 'none' : '1px solid #ccc'
+    });
+    msg.innerHTML = text;
+    replyEl.appendChild(msg);
+    replyEl.scrollTop = replyEl.scrollHeight;
+  }
+
+  // 7️⃣ send on Enter
   inputEl.addEventListener('keydown', async e => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       const text = inputEl.value.trim();
       if (!text) return;
 
-      replyEl.innerHTML = `<p><em>Typing…</em></p>`;
+      appendMsg('user', text);
       inputEl.value = '';
+      appendMsg('utopia', '<em>Typing…</em>');
 
       try {
         const res = await fetch(
@@ -114,12 +153,16 @@
           }
         );
         const { reply } = await res.json();
-        replyEl.innerHTML = `<p>${reply.replace(/\n/g,'<br>')}</p>`;
+        // replace the typing bubble
+        const last = replyEl.lastChild;
+        last.innerHTML = reply.replace(/\n/g,'<br>');
       } catch {
-        replyEl.innerHTML = `<p><strong>Error:</strong> Try again later.</p>`;
+        const last = replyEl.lastChild;
+        last.innerHTML = '<strong>Error:</strong> Try again later.';
       }
+      replyEl.scrollTop = replyEl.scrollHeight;
     }
   });
 
-  console.log('🟢 Kirschon widget updated: universal greeting placeholder');
+  console.log('🟢 Kirschon widget updated: greeting under selector & styled bubbles');
 })();

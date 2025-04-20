@@ -1,12 +1,9 @@
-// public/chatbot-widget.js
+ // public/chatbot-widget.js
 (function(){
-  // 0️⃣ Optional: ensure placeholder text is visible in black
+  // 0️⃣ Optional: enforce black placeholder
   const style = document.createElement('style');
   style.textContent = `
-    #kc-input::placeholder {
-      color: #000 !important;
-      opacity: 1 !important;
-    }
+    #kc-input::placeholder { color: #000 !important; opacity:1 !important; }
   `;
   document.head.appendChild(style);
 
@@ -34,7 +31,7 @@
     <div id="kc-chatbox" style="display:none;"></div>
   `;
 
-  // 3️⃣ Populate chatbox
+  // 3️⃣ Populate chatbox with selector, header, replies, input
   const chatbox = wrapper.querySelector('#kc-chatbox');
   chatbox.innerHTML = `
     <div style="
@@ -56,15 +53,14 @@
           <option value="es">🇪🇸 Español</option>
         </select>
       </div>
-      <!-- HEADER WITH GREETING -->
-      <div style="
+      <!-- HEADER (hidden until after language select) -->
+      <div id="kc-header" style="
+        display:none;
         background:#000; color:#fff;
         padding:10px; font-size:14px;
         display:flex; align-items:center; justify-content:space-between;
       ">
-        <span style="font-family: Times New Roman, serif; line-height:1.4;">
-          Hi, I’m Utopia your virtual assistant! How can I help you?
-        </span>
+        <span id="kc-header-text" style="font-family:inherit; line-height:1.4;"></span>
         <span id="kc-close" style="cursor:pointer; font-size:18px;">✕</span>
       </div>
       <!-- REPLIES -->
@@ -91,34 +87,57 @@
     </div>
   `;
 
-  // 4️⃣ Element references
-  const toggle  = wrapper.querySelector('#kc-toggle');
-  const closeB  = wrapper.querySelector('#kc-close');
-  const replies = wrapper.querySelector('#kc-replies');
-  const input   = wrapper.querySelector('#kc-input');
+  // 4️⃣ References
+  const toggleBtn = wrapper.querySelector('#kc-toggle');
+  const chat      = wrapper.querySelector('#kc-chatbox');
+  const langCont  = wrapper.querySelector('#kc-lang-container');
+  const langSel   = wrapper.querySelector('#kc-lang-select');
+  const header    = wrapper.querySelector('#kc-header');
+  const headerText= wrapper.querySelector('#kc-header-text');
+  const closeBtn  = wrapper.querySelector('#kc-close');
+  const replies   = wrapper.querySelector('#kc-replies');
+  const input     = wrapper.querySelector('#kc-input');
   const placeholderBubble = wrapper.querySelector('#kc-input-bubble');
-  const chat    = wrapper.querySelector('#kc-chatbox');
-  const langSel = wrapper.querySelector('#kc-lang-select');
-  const langCont= wrapper.querySelector('#kc-lang-container');
 
-  // 5️⃣ Open / close handlers
-  toggle.addEventListener('click', () => {
-    toggle.style.display = 'none';
-    chat.style.display   = 'block';
-    langCont.style.display = 'block';
+  // 5️⃣ Localized greetings
+  const greetings = {
+    it: "Ciao! Sono Utopia, la tua assistente virtuale. Come posso aiutarti?",
+    en: "Hi, I'm Utopia your virtual assistant! How can I help you?",
+    fr: "Bonjour ! Je suis Utopia, votre assistante virtuelle. Comment puis-je vous aider ?",
+    de: "Hallo! Ich bin Utopia, Ihre virtuelle Assistentin. Wie kann ich Ihnen helfen?",
+    es: "¡Hola! Soy Utopia, tu asistente virtual. ¿Cómo puedo ayudarte?"
+  };
+
+  // 6️⃣ Open chat: show selector only
+  toggleBtn.addEventListener('click', () => {
+    toggleBtn.style.display = 'none';
+    chat.style.display      = 'block';
+    langCont.style.display  = 'block';
+    header.style.display    = 'none';
     input.focus();
   });
-  closeB.addEventListener('click', () => {
-    chat.style.display   = 'none';
-    toggle.style.display = 'block';
-    replies.innerHTML    = '';
+
+  // 7️⃣ Close chat
+  closeBtn.addEventListener('click', () => {
+    chat.style.display      = 'none';
+    toggleBtn.style.display = 'block';
+    replies.innerHTML       = '';
   });
 
-  // 6️⃣ Hide placeholder on focus or input
+  // 8️⃣ After language select → hide selector, show header greeting
+  langSel.addEventListener('change', e => {
+    const lang = e.target.value;
+    langCont.style.display    = 'none';
+    headerText.textContent    = greetings[lang] || greetings.en;
+    header.style.display      = 'flex';
+    // Now replies & input can be used
+  });
+
+  // 9️⃣ Hide placeholder on focus/input
   input.addEventListener('focus', () => placeholderBubble.style.display = 'none');
   input.addEventListener('input', () => placeholderBubble.style.display = 'none');
 
-  // 7️⃣ Message append helper
+  // 🔟 Append messages on Enter
   function appendMsg(author, text) {
     const msg = document.createElement('div');
     Object.assign(msg.style, {
@@ -137,30 +156,30 @@
     replies.scrollTop = replies.scrollHeight;
   }
 
-  // 8️⃣ Send on Enter
-  input.addEventListener('keydown', async e => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      const txt = input.value.trim();
-      if (!txt) return;
-      appendMsg('user', txt);
+  input.addEventListener('keydown', async ev => {
+    if (ev.key === 'Enter' && !ev.shiftKey) {
+      ev.preventDefault();
+      const text = input.value.trim();
+      if (!text) return;
+      appendMsg('user', text);
       input.value = '';
       appendMsg('utopia', '<em>Typing…</em>');
       try {
-        const res = await fetch('https://kirschon-chatbot-final.onrender.com/api/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: txt, language: langSel.value })
-        });
+        const res = await fetch(
+          'https://kirschon-chatbot-final.onrender.com/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: text, language: langSel.value })
+          }
+        );
         const { reply } = await res.json();
         const last = replies.lastChild;
-        last.innerHTML = reply.replace(/\n/g, '<br>');
+        last.innerHTML = reply.replace(/\n/g,'<br>');
       } catch {
-        const last = replies.lastChild;
-        last.innerHTML = '<strong>Error:</strong> Try again later.';
+        replies.lastChild.innerHTML = '<strong>Error, try again later.</strong>';
       }
     }
   });
 
-  console.log('🟢 Kirschon widget: full greeting in header, black bubbles');
+  console.log('🟢 Widget ready: localized header greeting');
 })();

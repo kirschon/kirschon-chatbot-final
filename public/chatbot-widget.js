@@ -1,230 +1,154 @@
-// public/chatbot-widget.js
+ // public/chatbot-widget.js
 (function(){
-  // Inject custom styles for placeholder color
-  const styleEl = document.createElement('style');
-  styleEl.textContent = `
-    /* Placeholder text in input should be black */
+  // — 0) Inject black placeholder CSS for textarea text (optional)
+  const style = document.createElement('style');
+  style.textContent = `
     #kc-input::placeholder {
-      color: #000 !important;
-      opacity: 1;
+      color: transparent;
     }
   `;
-  document.head.appendChild(styleEl);
+  document.head.appendChild(style);
 
-  // 1️⃣ wrapper
+  // — 1) Create wrapper
   const wrapper = document.createElement('div');
-  wrapper.id = 'kirschon-chat-widget';
   Object.assign(wrapper.style, {
     position:      'fixed',
     bottom:        '20px',
     right:         '20px',
     zIndex:        '9999',
     display:       'flex',
-    flexDirection: 'column-reverse', // keep toggle at bottom
+    flexDirection: 'column-reverse',
     alignItems:    'flex-end',
     fontFamily:    'Times New Roman, serif'
   });
   document.body.appendChild(wrapper);
 
-  // 2️⃣ inject bubble + chat UI
+  // — 2) Inject HTML
   wrapper.innerHTML = `
-    <!-- Bubble -->
     <button id="kc-toggle" style="
       width:60px; height:60px;
       background:#fff; border:none; border-radius:50%;
-      font-size:28px; line-height:0; cursor:pointer; padding:0;
+      font-size:28px; cursor:pointer; padding:0;
     ">💬</button>
-
-    <!-- Chatbox -->
     <div id="kc-chatbox" style="
       display:none;
-      width:300px;
-      padding:10px; border-radius:5px;
-      box-shadow:0 0 10px rgba(0,0,0,0.1);
-      box-sizing:border-box;
-      position:relative;
-      margin-bottom:8px;
+      width:300px; background:#fff;
+      border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.1);
+      overflow:hidden; margin-bottom:8px;
       display:flex; flex-direction:column;
-      font-family:inherit;
     ">
-      <!-- Close -->
-      <span id="kc-close" style="
-        position:absolute; top:8px; right:8px;
-        cursor:pointer; font-size:18px;
-      ">✕</span>
-
-      <!-- LANGUAGE SELECTOR -->
-      <div id="kc-lang-container" style="margin-bottom:8px;">
-        <select id="kc-lang-select" style="
-          width:100%; padding:6px;
-          font-size:14px; font-family:inherit;
-          box-sizing:border-box;
-        ">
-          <option value="" disabled selected>Select language</option>
-          <option value="it">🇮🇹 Italiano</option>
-          <option value="en">🇬🇧 English</option>
-          <option value="fr">🇫🇷 Français</option>
-          <option value="de">🇩🇪 Deutsch</option>
-          <option value="es">🇪🇸 Español</option>
-        </select>
+      <div style="
+        background:#000; color:#fff;
+        padding:10px; font-size:16px;
+        font-weight:bold; display:flex;
+        justify-content:space-between;
+      ">
+        <span>Utopia</span>
+        <span id="kc-close" style="cursor:pointer;">✕</span>
       </div>
-
-      <!-- GREETING -->
-      <div id="kc-greeting" style="
-        display:none;
-        background:#000;
-        color:#fff;
-        padding:8px;
-        border-radius:8px;
-        margin-bottom:8px;
-        font-size:14px;
-        line-height:1.4;
-        font-family:inherit;
-      "></div>
-
-      <!-- INPUT LABEL -->
-      <div id="kc-input-label" style="
-        display:none;
-        margin-bottom:4px;
-        font-size:14px;
-        color:#666;
-        font-family:inherit;
-      "></div>
-
-      <!-- INPUT -->
-      <textarea id="kc-input" style="
-        display:none;
-        width:100%; height:80px;
-        padding:6px; font-family:inherit;
-        font-size:14px; box-sizing:border-box;
-        resize:vertical;
-        border:none;
-        outline:none;
-        background:#d3d3d3;
-        color:#000;
-      " placeholder="Type a message…"></textarea>
-
-      <!-- REPLIES -->
       <div id="kc-replies" style="
-        display:none;
-        margin-top:10px; max-height:150px;
-        overflow-y:auto;
-        font-family:inherit;
-        font-size:14px;
-        display:flex; flex-direction:column;
+        flex:1; padding:8px;
+        overflow-y:auto; display:flex;
+        flex-direction:column; gap:6px;
       "></div>
+      <!-- Input container with placeholder bubble behind -->
+      <div id="kc-input-container" style="
+        position:relative;
+        padding:8px;
+        background:#f7f7f7;
+      ">
+        <div id="kc-input-bubble" style="
+          position:absolute;
+          top:8px; left:8px; right:8px; bottom:8px;
+          background:#d3d3d3;
+          color:#000;
+          border-radius:16px;
+          padding:12px;
+          font-size:14px;
+          pointer-events:none;
+          font-family:inherit;
+        ">Type a message…</div>
+        <textarea id="kc-input" placeholder="Type a message…" style="
+          position:relative;
+          width:100%; height:40px;
+          background:transparent;
+          border:none; resize:none;
+          padding:12px; padding-top:8px;
+          box-sizing:border-box;
+          font-family:inherit;
+          font-size:14px;
+          z-index:1;
+        "></textarea>
+      </div>
     </div>
   `;
 
-  // 3️⃣ grab elements
-  const toggleBtn = wrapper.querySelector('#kc-toggle');
-  const chatbox   = wrapper.querySelector('#kc-chatbox');
-  const closeBtn  = wrapper.querySelector('#kc-close');
-  const langCont  = wrapper.querySelector('#kc-lang-container');
-  const langSel   = wrapper.querySelector('#kc-lang-select');
-  const greetDiv  = wrapper.querySelector('#kc-greeting');
-  const inputLbl  = wrapper.querySelector('#kc-input-label');
-  const inputEl   = wrapper.querySelector('#kc-input');
-  const replies   = wrapper.querySelector('#kc-replies');
+  // — 3) Element refs
+  const toggle  = wrapper.querySelector('#kc-toggle');
+  const chat    = wrapper.querySelector('#kc-chatbox');
+  const closeB  = wrapper.querySelector('#kc-close');
+  const replies = wrapper.querySelector('#kc-replies');
+  const input   = wrapper.querySelector('#kc-input');
+  const placeholderBubble = wrapper.querySelector('#kc-input-bubble');
 
-  // 4️⃣ localized greetings & input labels
-  const greetings = {
-    it: "Ciao! Sono Utopia, la tua assistente virtuale. Come posso aiutarti?",
-    en: "Hi, I'm Utopia your virtual assistant! How can I help you?",
-    fr: "Bonjour ! Je suis Utopia, votre assistante virtuelle. Comment puis‑je vous aider ?",
-    de: "Hallo! Ich bin Utopia, Ihre virtuelle Assistentin. Wie kann ich Ihnen helfen?",
-    es: "¡Hola! Soy Utopia, tu asistente virtual. ¿Cómo puedo ayudarte?"
-  };
-  const inputPrompts = {
-    it: "Scrivi un messaggio…",
-    en: "Type a message…",
-    fr: "Tapez un message…",
-    de: "Schreiben Sie eine Nachricht…",
-    es: "Escribe un mensaje…"
-  };
-
-  // 5️⃣ show/hide chat & bubble
-  function showChat() {
-    toggleBtn.style.display = 'none';
-    chatbox.style.display   = 'flex';
-    langCont.style.display  = 'block';
-    greetDiv.style.display  = 'none';
-    inputLbl.style.display  = 'none';
-    inputEl.style.display   = 'none';
-    replies.style.display   = 'none';
-  }
-  function hideChat() {
-    chatbox.style.display   = 'none';
-    toggleBtn.style.display = 'block';
-  }
-
-  toggleBtn.addEventListener('click', showChat);
-  closeBtn.addEventListener('click', hideChat);
-
-  // 6️⃣ after language select → show greeting, label & input
-  langSel.addEventListener('change', e => {
-    const lang = e.target.value;
-    langCont.style.display   = 'none';
-    greetDiv.textContent     = greetings[lang] || greetings.en;
-    greetDiv.style.display   = 'block';
-    inputLbl.textContent     = inputPrompts[lang] || inputPrompts.en;
-    inputLbl.style.display   = 'block';
-    inputEl.placeholder      = inputPrompts[lang] || inputPrompts.en;
-    inputEl.style.display    = 'block';
-    replies.style.display    = 'flex';
-    inputEl.focus();
+  // — 4) Open/close
+  toggle.addEventListener('click',()=>{
+    toggle.style.display='none';
+    chat.style.display='flex';
+    input.focus();
+  });
+  closeB.addEventListener('click',()=>{
+    chat.style.display='none';
+    toggle.style.display='block';
+    replies.innerHTML=''; // clear history if desired
   });
 
-  // 7️⃣ send on Enter
-  inputEl.addEventListener('keydown', async ev => {
-    if (ev.key === 'Enter' && !ev.shiftKey) {
-      ev.preventDefault();
-      const text = inputEl.value.trim();
-      if (!text) return;
-      appendMsg('user', text);
-      inputEl.value = '';
-      appendMsg('utopia', '<em>Typing…</em>');
-      try {
-        const res = await fetch(
-          'https://kirschon-chatbot-final.onrender.com/api/chat',
-          {
-            method:'POST',
-            headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({ message:text, language:langSel.value })
-          }
-        );
-        const { reply } = await res.json();
-        const last = replies.lastChild;
-        last.innerHTML = reply.replace(/\n/g,'<br>');
-      } catch {
-        const last = replies.lastChild;
-        last.innerHTML = '<strong>Error:</strong> Try again later.';
-      }
-      replies.scrollTop = replies.scrollHeight;
-    }
-  });
-
-  // 8️⃣ helper to append message
-  function appendMsg(author, text) {
+  // — 5) Message appending
+  function appendMsg(author,text){
     const msg = document.createElement('div');
-    Object.assign(msg.style, {
+    Object.assign(msg.style,{
       maxWidth:    '80%',
-      padding:     '8px',
-      marginBottom:'8px',
-      borderRadius:'8px',
+      padding:     '8px 12px',
+      borderRadius:'16px',
       fontFamily:  'Times New Roman, serif',
       fontSize:    '14px',
       lineHeight:  '1.4',
       alignSelf:   author==='utopia' ? 'flex-start' : 'flex-end',
-      background:  author==='utopia' ? '#000'         : '#d3d3d3',
-      color:       author==='utopia' ? '#fff'         : '#000',
-      border:      'none'
+      background:  author==='utopia' ? '#000' : '#d3d3d3',
+      color:       author==='utopia' ? '#fff' : '#000'
     });
     msg.innerHTML = text;
     replies.appendChild(msg);
     replies.scrollTop = replies.scrollHeight;
   }
 
-  console.log('🟢 Kirschon widget: updated styling for Utopia and user messages');  
+  // — 6) Typing flow on Enter
+  input.addEventListener('focus', ()=>{
+    // once the user focuses, hide the placeholder bubble
+    placeholderBubble.style.display = 'none';
+  });
+  input.addEventListener('keydown', async ev=>{
+    if(ev.key==='Enter' && !ev.shiftKey){
+      ev.preventDefault();
+      const txt = input.value.trim(); if(!txt) return;
+      appendMsg('user', txt);
+      input.value='';
+      appendMsg('utopia','<em>Typing…</em>');
+      try {
+        const res = await fetch('https://kirschon-chatbot-final.onrender.com/api/chat',{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({ message:txt })
+        });
+        const { reply } = await res.json();
+        const last = replies.lastChild;
+        last.innerHTML = reply.replace(/\n/g,'<br>');
+      } catch {
+        const last = replies.lastChild;
+        last.innerHTML = '<strong>Error, try again later.</strong>';
+      }
+    }
+  });
+
+  console.log('🟢 Kirschon widget updated: black bubbles & placeholder behind input');
 })();
- 

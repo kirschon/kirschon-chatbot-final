@@ -1,5 +1,16 @@
- // public/chatbot-widget.js
+// public/chatbot-widget.js
 (function(){
+  // Inject custom styles for placeholder color
+  const styleEl = document.createElement('style');
+  styleEl.textContent = `
+    /* Placeholder text in input should be black */
+    #kc-input::placeholder {
+      color: #000 !important;
+      opacity: 1;
+    }
+  `;
+  document.head.appendChild(styleEl);
+
   // 1️⃣ wrapper
   const wrapper = document.createElement('div');
   wrapper.id = 'kirschon-chat-widget';
@@ -9,7 +20,7 @@
     right:         '20px',
     zIndex:        '9999',
     display:       'flex',
-    flexDirection: 'column-reverse',
+    flexDirection: 'column-reverse', // keep toggle at bottom
     alignItems:    'flex-end',
     fontFamily:    'Times New Roman, serif'
   });
@@ -27,12 +38,14 @@
     <!-- Chatbox -->
     <div id="kc-chatbox" style="
       display:none;
-      width:300px; background:#fff;
+      width:300px;
       padding:10px; border-radius:5px;
       box-shadow:0 0 10px rgba(0,0,0,0.1);
       box-sizing:border-box;
       position:relative;
       margin-bottom:8px;
+      display:flex; flex-direction:column;
+      font-family:inherit;
     ">
       <!-- Close -->
       <span id="kc-close" style="
@@ -59,13 +72,14 @@
       <!-- GREETING -->
       <div id="kc-greeting" style="
         display:none;
-        background:#e0e0e0;
-        color:#000;
+        background:#000;
+        color:#fff;
         padding:8px;
         border-radius:8px;
         margin-bottom:8px;
         font-size:14px;
         line-height:1.4;
+        font-family:inherit;
       "></div>
 
       <!-- INPUT LABEL -->
@@ -84,16 +98,20 @@
         padding:6px; font-family:inherit;
         font-size:14px; box-sizing:border-box;
         resize:vertical;
-        border:none;       /* ← no border */
-        outline:none;      /* ← no focus outline */
-      "></textarea>
+        border:none;
+        outline:none;
+        background:#d3d3d3;
+        color:#000;
+      " placeholder="Type a message…"></textarea>
 
       <!-- REPLIES -->
       <div id="kc-replies" style="
         display:none;
         margin-top:10px; max-height:150px;
-        overflow-y:auto; font-family:inherit;
-        font-size:14px; display:flex; flex-direction:column;
+        overflow-y:auto;
+        font-family:inherit;
+        font-size:14px;
+        display:flex; flex-direction:column;
       "></div>
     </div>
   `;
@@ -128,7 +146,7 @@
   // 5️⃣ show/hide chat & bubble
   function showChat() {
     toggleBtn.style.display = 'none';
-    chatbox.style.display   = 'block';
+    chatbox.style.display   = 'flex';
     langCont.style.display  = 'block';
     greetDiv.style.display  = 'none';
     inputLbl.style.display  = 'none';
@@ -146,15 +164,12 @@
   // 6️⃣ after language select → show greeting, label & input
   langSel.addEventListener('change', e => {
     const lang = e.target.value;
-    // hide selector
     langCont.style.display   = 'none';
-    // greeting
     greetDiv.textContent     = greetings[lang] || greetings.en;
     greetDiv.style.display   = 'block';
-    // input label
     inputLbl.textContent     = inputPrompts[lang] || inputPrompts.en;
     inputLbl.style.display   = 'block';
-    // input & replies
+    inputEl.placeholder      = inputPrompts[lang] || inputPrompts.en;
     inputEl.style.display    = 'block';
     replies.style.display    = 'flex';
     inputEl.focus();
@@ -201,14 +216,15 @@
       fontSize:    '14px',
       lineHeight:  '1.4',
       alignSelf:   author==='utopia' ? 'flex-start' : 'flex-end',
-      background:  author==='utopia' ? '#e0e0e0' : '#fff',
-      color:       '#000',
-      border:      author==='utopia' ? 'none' : 'none'
+      background:  author==='utopia' ? '#000'         : '#d3d3d3',
+      color:       author==='utopia' ? '#fff'         : '#000',
+      border:      'none'
     });
     msg.innerHTML = text;
     replies.appendChild(msg);
     replies.scrollTop = replies.scrollHeight;
   }
 
-  console.log('🟢 Kirschon widget: added input label & removed textarea border');
+  console.log('🟢 Kirschon widget: updated styling for Utopia and user messages');  
 })();
+ 

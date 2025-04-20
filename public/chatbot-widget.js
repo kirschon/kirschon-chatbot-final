@@ -1,9 +1,12 @@
  // public/chatbot-widget.js
 (function(){
-  // 0️⃣ Optional: enforce black placeholder
+  // 0️⃣ Optional: enforce black placeholder visibility
   const style = document.createElement('style');
   style.textContent = `
-    #kc-input::placeholder { color: #000 !important; opacity:1 !important; }
+    #kc-input::placeholder {
+      color: #000 !important;
+      opacity: 1 !important;
+    }
   `;
   document.head.appendChild(style);
 
@@ -31,7 +34,7 @@
     <div id="kc-chatbox" style="display:none;"></div>
   `;
 
-  // 3️⃣ Populate chatbox with selector, header, replies, input
+  // 3️⃣ Populate chatbox
   const chatbox = wrapper.querySelector('#kc-chatbox');
   chatbox.innerHTML = `
     <div style="
@@ -87,19 +90,19 @@
     </div>
   `;
 
-  // 4️⃣ References
-  const toggleBtn = wrapper.querySelector('#kc-toggle');
-  const chat      = wrapper.querySelector('#kc-chatbox');
-  const langCont  = wrapper.querySelector('#kc-lang-container');
-  const langSel   = wrapper.querySelector('#kc-lang-select');
-  const header    = wrapper.querySelector('#kc-header');
-  const headerText= wrapper.querySelector('#kc-header-text');
-  const closeBtn  = wrapper.querySelector('#kc-close');
-  const replies   = wrapper.querySelector('#kc-replies');
-  const input     = wrapper.querySelector('#kc-input');
+  // 4️⃣ Element references
+  const toggleBtn       = wrapper.querySelector('#kc-toggle');
+  const chat            = wrapper.querySelector('#kc-chatbox');
+  const langCont        = wrapper.querySelector('#kc-lang-container');
+  const langSel         = wrapper.querySelector('#kc-lang-select');
+  const header          = wrapper.querySelector('#kc-header');
+  const headerText      = wrapper.querySelector('#kc-header-text');
+  const closeBtn        = wrapper.querySelector('#kc-close');
+  const replies         = wrapper.querySelector('#kc-replies');
+  const input           = wrapper.querySelector('#kc-input');
   const placeholderBubble = wrapper.querySelector('#kc-input-bubble');
 
-  // 5️⃣ Localized greetings
+  // 5️⃣ Localized greetings & input prompts
   const greetings = {
     it: "Ciao! Sono Utopia, la tua assistente virtuale. Come posso aiutarti?",
     en: "Hi, I'm Utopia your virtual assistant! How can I help you?",
@@ -107,37 +110,46 @@
     de: "Hallo! Ich bin Utopia, Ihre virtuelle Assistentin. Wie kann ich Ihnen helfen?",
     es: "¡Hola! Soy Utopia, tu asistente virtual. ¿Cómo puedo ayudarte?"
   };
+  const inputPrompts = {
+    it: "Scrivi un messaggio…",
+    en: "Type a message…",
+    fr: "Tapez un message…",
+    de: "Schreiben Sie eine Nachricht…",
+    es: "Escribe un mensaje…"
+  };
 
-  // 6️⃣ Open chat: show selector only
+  // 6️⃣ Open / close chat
   toggleBtn.addEventListener('click', () => {
-    toggleBtn.style.display = 'none';
-    chat.style.display      = 'block';
-    langCont.style.display  = 'block';
-    header.style.display    = 'none';
+    toggleBtn.style.display   = 'none';
+    chat.style.display        = 'block';
+    langCont.style.display    = 'block';
+    header.style.display      = 'none';
+    input.focus();
+  });
+  closeBtn.addEventListener('click', () => {
+    chat.style.display        = 'none';
+    toggleBtn.style.display   = 'block';
+    replies.innerHTML         = '';
+  });
+
+  // 7️⃣ After language select → show header & update texts
+  langSel.addEventListener('change', e => {
+    const lang = e.target.value;
+    langCont.style.display      = 'none';
+    headerText.textContent      = greetings[lang] || greetings.en;
+    header.style.display        = 'flex';
+    // update input prompt
+    const prompt                 = inputPrompts[lang] || inputPrompts.en;
+    input.placeholder            = prompt;
+    placeholderBubble.textContent= prompt;
     input.focus();
   });
 
-  // 7️⃣ Close chat
-  closeBtn.addEventListener('click', () => {
-    chat.style.display      = 'none';
-    toggleBtn.style.display = 'block';
-    replies.innerHTML       = '';
-  });
-
-  // 8️⃣ After language select → hide selector, show header greeting
-  langSel.addEventListener('change', e => {
-    const lang = e.target.value;
-    langCont.style.display    = 'none';
-    headerText.textContent    = greetings[lang] || greetings.en;
-    header.style.display      = 'flex';
-    // Now replies & input can be used
-  });
-
-  // 9️⃣ Hide placeholder on focus/input
+  // 8️⃣ Hide placeholder on focus or typing
   input.addEventListener('focus', () => placeholderBubble.style.display = 'none');
   input.addEventListener('input', () => placeholderBubble.style.display = 'none');
 
-  // 🔟 Append messages on Enter
+  // 9️⃣ Helper to append message bubbles
   function appendMsg(author, text) {
     const msg = document.createElement('div');
     Object.assign(msg.style, {
@@ -156,12 +168,13 @@
     replies.scrollTop = replies.scrollHeight;
   }
 
-  input.addEventListener('keydown', async ev => {
-    if (ev.key === 'Enter' && !ev.shiftKey) {
-      ev.preventDefault();
-      const text = input.value.trim();
-      if (!text) return;
-      appendMsg('user', text);
+  // 🔟 Send on Enter
+  input.addEventListener('keydown', async e => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      const txt = input.value.trim();
+      if (!txt) return;
+      appendMsg('user', txt);
       input.value = '';
       appendMsg('utopia', '<em>Typing…</em>');
       try {
@@ -169,17 +182,17 @@
           'https://kirschon-chatbot-final.onrender.com/api/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: text, language: langSel.value })
-          }
-        );
+            body: JSON.stringify({ message: txt, language: langSel.value })
+        });
         const { reply } = await res.json();
         const last = replies.lastChild;
         last.innerHTML = reply.replace(/\n/g,'<br>');
       } catch {
-        replies.lastChild.innerHTML = '<strong>Error, try again later.</strong>';
+        const last = replies.lastChild;
+        last.innerHTML = '<strong>Error, try again later.</strong>';
       }
     }
   });
 
-  console.log('🟢 Widget ready: localized header greeting');
+  console.log('🟢 Kirschon widget: localized header & input prompt');
 })();

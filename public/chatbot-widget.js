@@ -1,4 +1,4 @@
- // public/chatbot-widget.js
+// public/chatbot-widget.js
 (function(){
   // 0️⃣ Optional: enforce black placeholder visibility
   const style = document.createElement('style');
@@ -42,10 +42,13 @@
       border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.1);
       overflow:hidden; display:flex; flex-direction:column;
     ">
-      <!-- LANGUAGE SELECTOR -->
-      <div id="kc-lang-container" style="padding:10px; box-sizing:border-box;">
+      <!-- LANGUAGE SELECTOR with close -->
+      <div id="kc-lang-container" style="
+        padding:10px; box-sizing:border-box;
+        display:flex; justify-content:space-between; align-items:center;
+      ">
         <select id="kc-lang-select" style="
-          width:100%; padding:6px;
+          flex-grow:1; padding:6px;
           font-size:14px; font-family:inherit;
         ">
           <option value="" disabled selected>Select language</option>
@@ -55,7 +58,12 @@
           <option value="de">🇩🇪 Deutsch</option>
           <option value="es">🇪🇸 Español</option>
         </select>
+        <span id="kc-lang-close" style="
+          margin-left:10px; cursor:pointer;
+          font-size:18px; color:#000;
+        ">✕</span>
       </div>
+
       <!-- HEADER (hidden until after language select) -->
       <div id="kc-header" style="
         display:none;
@@ -66,11 +74,13 @@
         <span id="kc-header-text" style="font-family:inherit; line-height:1.4;"></span>
         <span id="kc-close" style="cursor:pointer; font-size:18px;">✕</span>
       </div>
+
       <!-- REPLIES -->
       <div id="kc-replies" style="
         flex:1; padding:8px; overflow-y:auto;
         display:flex; flex-direction:column; gap:6px;
       "></div>
+
       <!-- INPUT AREA -->
       <div style="position:relative; padding:8px; background:#f7f7f7;">
         <div id="kc-input-bubble" style="
@@ -91,15 +101,16 @@
   `;
 
   // 4️⃣ Element references
-  const toggleBtn       = wrapper.querySelector('#kc-toggle');
-  const chat            = wrapper.querySelector('#kc-chatbox');
-  const langCont        = wrapper.querySelector('#kc-lang-container');
-  const langSel         = wrapper.querySelector('#kc-lang-select');
-  const header          = wrapper.querySelector('#kc-header');
-  const headerText      = wrapper.querySelector('#kc-header-text');
-  const closeBtn        = wrapper.querySelector('#kc-close');
-  const replies         = wrapper.querySelector('#kc-replies');
-  const input           = wrapper.querySelector('#kc-input');
+  const toggleBtn         = wrapper.querySelector('#kc-toggle');
+  const chat              = wrapper.querySelector('#kc-chatbox');
+  const langCont          = wrapper.querySelector('#kc-lang-container');
+  const langSel           = wrapper.querySelector('#kc-lang-select');
+  const langCloseBtn      = wrapper.querySelector('#kc-lang-close');
+  const header            = wrapper.querySelector('#kc-header');
+  const headerText        = wrapper.querySelector('#kc-header-text');
+  const closeBtn          = wrapper.querySelector('#kc-close');
+  const replies           = wrapper.querySelector('#kc-replies');
+  const input             = wrapper.querySelector('#kc-input');
   const placeholderBubble = wrapper.querySelector('#kc-input-bubble');
 
   // 5️⃣ Localized greetings & input prompts
@@ -122,14 +133,22 @@
   toggleBtn.addEventListener('click', () => {
     toggleBtn.style.display   = 'none';
     chat.style.display        = 'block';
-    langCont.style.display    = 'block';
+    langCont.style.display    = 'flex';
     header.style.display      = 'none';
     input.focus();
   });
+
   closeBtn.addEventListener('click', () => {
     chat.style.display        = 'none';
     toggleBtn.style.display   = 'block';
     replies.innerHTML         = '';
+  });
+
+  langCloseBtn.addEventListener('click', () => {
+    chat.style.display        = 'none';
+    toggleBtn.style.display   = 'block';
+    replies.innerHTML         = '';
+    langSel.selectedIndex     = 0;
   });
 
   // 7️⃣ After language select → show header & update texts
@@ -138,7 +157,6 @@
     langCont.style.display      = 'none';
     headerText.textContent      = greetings[lang] || greetings.en;
     header.style.display        = 'flex';
-    // update input prompt
     const prompt                 = inputPrompts[lang] || inputPrompts.en;
     input.placeholder            = prompt;
     placeholderBubble.textContent= prompt;
@@ -194,5 +212,5 @@
     }
   });
 
-  console.log('🟢 Kirschon widget: localized header & input prompt');
+  console.log('🟢 Kirschon widget: localized with close on language selector');
 })();

@@ -38,23 +38,40 @@ function getLanguageName(language) {
   }
 }
 
-async function getResponseFromOpenAI(message, language, products) {
-  const languageName = getLanguageName(language);
-  const staticDetails = Object.values(generalInfo).join('\n');
+function getShippingInfo(userLocation) {
+  if (!userLocation) return "Shipping is FREE to most European countries. Outside Europe, shipping fees may apply.";
+  const europeCountries = [
+    "italy", "france", "germany", "spain", "portugal", "netherlands", "austria", "belgium", "switzerland",
+    "denmark", "norway", "sweden", "finland", "greece", "ireland", "czech republic", "poland", "hungary",
+    "luxembourg", "croatia", "slovenia", "slovakia", "romania", "bulgaria", "estonia", "latvia", "lithuania"
+  ];
+  const normalized = userLocation.toLowerCase();
+  return europeCountries.includes(normalized)
+    ? "Shipping is FREE to your country as part of our European shipping policy."
+    : "Shipping is FREE to most European countries. Shipping fees may apply to your country.";
+}
 
+async function getResponseFromOpenAI(message, language, products, userLocation) {
+  const languageName = getLanguageName(language);
+  const staticDetails = Object.entries(generalInfo).map(([k, v]) => `${k.toUpperCase()}: ${v}`).join('\n');
+  const shippingInfo = getShippingInfo(userLocation);
+
+  const combinedInfo = `${staticDetails}\n\nSHIPPING POLICY: ${shippingInfo}`;
+
+  // GENERAL QUESTIONS
   if (isGeneralQuestion(message)) {
     const basePrompt = `
 You are an assistant for a luxury home decor boutique on Lake Como.
 
 Use only the following information to answer the question:
 
-${staticDetails}
+${combinedInfo}
 
 User's question:
 ${message}
 
 Answer in English only. Be polite, elegant and helpful.
-`;
+    `.trim();
 
     const baseResponse = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
@@ -68,7 +85,7 @@ Translate the following response into ${languageName}. Only return the translati
 
 RESPONSE:
 ${englishAnswer}
-`;
+    `.trim();
 
     const translated = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
@@ -78,6 +95,7 @@ ${englishAnswer}
     return translated.choices[0].message.content.trim();
   }
 
+  // PRODUCT QUESTIONS
   const relevantProducts = filterRelevantProducts(message, products);
   const productList = relevantProducts.map(p => {
     return "- " + p.title + ": " + p.description + " (" + p.url + ")" + (p.image ? " [img:" + p.image + "]" : "");
@@ -87,7 +105,7 @@ ${englishAnswer}
 You are an assistant for a luxury home decor brand. Use only the following products and general info to answer:
 
 GENERAL INFO:
-${staticDetails}
+${combinedInfo}
 
 PRODUCTS:
 ${productList}
@@ -96,7 +114,7 @@ QUESTION:
 ${message}
 
 Give your reply in English only. Be concise, elegant and informative.
-`;
+  `.trim();
 
   const baseResponse = await openai.chat.completions.create({
     model: "gpt-3.5-turbo",
@@ -110,7 +128,7 @@ Translate the following response into ${languageName}. Only return the translati
 
 RESPONSE:
 ${englishAnswer}
-`;
+  `.trim();
 
   const translated = await openai.chat.completions.create({
     model: "gpt-3.5-turbo",

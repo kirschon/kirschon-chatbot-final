@@ -13,7 +13,8 @@ app.use(express.static('public'));
 
 app.post('/api/chat', async (req, res) => {
   console.log("✅ Richiesta ricevuta:", req.body);
-  const { message, language } = req.body;
+  const { message, language, location } = req.body;
+
 
   const products = await getShopifyProducts(language);
   const aiResponse = await getResponseFromOpenAI(message, language, products);
